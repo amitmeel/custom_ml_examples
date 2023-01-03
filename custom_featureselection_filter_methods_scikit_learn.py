@@ -1,8 +1,10 @@
 ## feature selection using filter methods
 
+
 import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.base import BaseEstimator, TransformerMixin
+from sklearn.feature_selection import chi2, mutual_info_classif, f_classif
 
 class FeatureSelector(BaseEstimator, TransformerMixin):
     def __init__(self, feature_names, method='mutual_info_classif', **kwargs):
@@ -11,8 +13,15 @@ class FeatureSelector(BaseEstimator, TransformerMixin):
         self.kwargs = kwargs
     
     def fit(self, X, y=None):
-        from sklearn.feature_selection import mutual_info_classif
-        self.scores_ = mutual_info_classif(X, y, **self.kwargs)
+        if self.method == 'mutual_info_classif':
+            self.scores_ = mutual_info_classif(X, y, **self.kwargs)
+        elif self.method == 'chi2':
+             # Apply the np.abs transformation to the input data to ensure it is non-negative
+            self.scores_ = chi2(np.abs(X), y)[0]
+        elif self.method == 'f_classif':
+            self.scores_ = f_classif(X, y)[0]
+        else:
+            raise ValueError(f"Invalid method: {self.method}")
         return self
     
     def transform(self, X, y=None, top_n=10):
@@ -21,7 +30,7 @@ class FeatureSelector(BaseEstimator, TransformerMixin):
     
     def get_important_features(self, top_n=10):
         return [self.feature_names[i] for i in self.selected_indices]
-    
+      
     def plot_importance_scores_matplotlib(self, top_n=10):
         selected_indices = np.argpartition(self.scores_, -top_n)[-top_n:]
         important_features = [self.feature_names[i] for i in self.selected_indices]
